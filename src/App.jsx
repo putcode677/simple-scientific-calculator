@@ -1,6 +1,5 @@
-// src/App.jsx
 import React, { useState, useEffect } from 'react';
-import { Delete, Percent, History, Trash2 } from 'lucide-react';
+import { Delete, Percent, History, Trash2, Sun, Moon } from 'lucide-react';
 import { evaluateExpression } from './utils/engine';
 
 export default function App() {
@@ -8,7 +7,20 @@ export default function App() {
   const [result, setResult] = useState('');
   const [isDegree, setIsDegree] = useState(true);
   const [history, setHistory] = useState([]);
+  const [darkMode, setDarkMode] = useState(() => {
+    const savedTheme = localStorage.getItem('theme');
+    return savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  });
 
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [darkMode]);
   const handleKeyPress = (value) => {
     if (value === 'AC') {
       setDisplay('');
@@ -54,7 +66,6 @@ export default function App() {
     window.addEventListener('keydown', handlePhysicalKeyDown);
     return () => window.removeEventListener('keydown', handlePhysicalKeyDown);
   }, [display, isDegree]);
-
   const buttons = [
     { label: isDegree ? 'DEG' : 'RAD', action: () => setIsDegree(!isDegree), style: 'bg-[var(--accent)] text-white font-bold' },
     { label: 'sin', action: () => handleKeyPress('sin'), style: 'bg-[var(--code-bg)] text-[var(--text-h)] font-semibold' },
@@ -88,10 +99,19 @@ export default function App() {
     { label: '.', action: () => handleKeyPress('.'), style: 'bg-[var(--bg)] text-[var(--text-h)] border border-[var(--border)] font-bold' },
     { label: '=', action: () => handleKeyPress('='), style: 'bg-[var(--accent)] text-white font-bold text-xl' },
   ];
-
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-6 w-full mx-auto max-w-xl gap-6">
-      <h1>Scientific Calculator</h1>
+      
+      <div className="w-full flex justify-between items-center px-2">
+        <h1 className="!my-0">Scientific Calculator</h1>
+        <button
+          onClick={() => setDarkMode(!darkMode)}
+          className="p-2.5 rounded-xl border border-[var(--border)] bg-[var(--bg)] text-[var(--text-h)] cursor-pointer hover:border-[var(--accent)] transition-all shadow-sm"
+          title={darkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+        >
+          {darkMode ? <Sun className="w-5 h-5 text-amber-500" /> : <Moon className="w-5 h-5 text-indigo-500" />}
+        </button>
+      </div>
       
       <div 
         className="w-full p-6 rounded-2xl border border-[var(--border)] transition-colors duration-200"
