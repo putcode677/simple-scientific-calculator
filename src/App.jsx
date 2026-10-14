@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Delete, Percent } from 'lucide-react';
 
 export default function App() {
@@ -53,6 +53,51 @@ export default function App() {
     }
   };
 
+  // Kusikiliza matukio ya Physical Keyboard
+  useEffect(() => {
+    const handlePhysicalKeyDown = (event) => {
+      const { key } = event;
+
+      // Namba na Alama za kawaida
+      if (/[0-9.\+\-\(\)\^%]/.test(key)) {
+        event.preventDefault();
+        handleKeyPress(key);
+      } 
+      // Alama ya kuzidisha
+      else if (key === '*') {
+        event.preventDefault();
+        handleKeyPress('×');
+      } 
+      // Alama ya kugawanya
+      else if (key === '/') {
+        event.preventDefault();
+        handleKeyPress('÷');
+      } 
+      // Kupata majibu (Enter au Equal sign)
+      else if (key === 'Enter' || key === '=') {
+        event.preventDefault();
+        handleKeyPress('=');
+      } 
+      // Kufuta herufi moja nyuma (Backspace)
+      else if (key === 'Backspace') {
+        event.preventDefault();
+        handleKeyPress('DEL');
+      } 
+      // Kufuta kila kitu (Escape key kwa ajili ya AC)
+      else if (key === 'Escape') {
+        event.preventDefault();
+        handleKeyPress('AC');
+      }
+    };
+
+    window.addEventListener('keydown', handlePhysicalKeyDown);
+    
+    // Kusafisha listener wakati component inafungwa au kubadilika
+    return () => {
+      window.removeEventListener('keydown', handlePhysicalKeyDown);
+    };
+  }, [display, isDegree]); // Inategemea state hizi ili kupata data mpya wakati wa evaluate
+
   const buttons = [
     { label: isDegree ? 'DEG' : 'RAD', action: () => setIsDegree(!isDegree), style: 'bg-[var(--accent)] text-white font-bold' },
     { label: 'sin', action: () => handleKeyPress('sin'), style: 'bg-[var(--code-bg)] text-[var(--text-h)]' },
@@ -102,7 +147,6 @@ export default function App() {
         className="w-full p-6 rounded-2xl border border-[var(--border)] transition-colors duration-200"
         style={{ boxShadow: 'var(--shadow)', backgroundColor: 'var(--bg)' }}
       >
-        {/* State/Mode Indicator */}
         <div className="flex justify-between items-center mb-4 text-xs font-mono tracking-widest text-[var(--text)]">
           <span>MATHEMATICAL PARSER</span>
           <span className="px-2 py-0.5 rounded font-bold bg-[var(--accent-bg)] text-[var(--accent)] border border-[var(--accent-border)]">
@@ -110,7 +154,6 @@ export default function App() {
           </span>
         </div>
 
-        {/* Display Screens */}
         <div className="w-full p-4 mb-6 rounded-xl bg-[var(--code-bg)] border border-[var(--border)] flex flex-col justify-between min-h-[110px] text-right font-mono overflow-x-auto break-all">
           <div className="text-[var(--text)] text-sm tracking-wide h-6 overflow-hidden">
             {display || '0'}
@@ -120,7 +163,6 @@ export default function App() {
           </div>
         </div>
 
-        {/* Action Button Grid */}
         <div className="grid grid-cols-4 gap-3">
           {buttons.map((btn, index) => (
             <button
