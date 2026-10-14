@@ -1,42 +1,13 @@
+// src/App.jsx
 import React, { useState, useEffect } from 'react';
-import { Delete, Percent } from 'lucide-react';
+import { Delete, Percent, History, Trash2 } from 'lucide-react';
+import { evaluateExpression } from './utils/engine';
 
 export default function App() {
   const [display, setDisplay] = useState('');
   const [result, setResult] = useState('');
   const [isDegree, setIsDegree] = useState(true);
-
-  const evaluateExpression = (expr) => {
-    try {
-      if (!expr) return '';
-      let sanitized = expr
-        .replace(/×/g, '*')
-        .replace(/÷/g, '/')
-        .replace(/π/g, `Math.PI`)
-        .replace(/e/g, `Math.E`);
-
-      const angleMultiplier = isDegree ? `* (Math.PI / 180)` : '';
-
-      sanitized = sanitized.replace(/sin\(([^)]+)\)/g, (_, p1) => `Math.sin(${p1} ${angleMultiplier})`);
-      sanitized = sanitized.replace(/cos\(([^)]+)\)/g, (_, p1) => `Math.cos(${p1} ${angleMultiplier})`);
-      sanitized = sanitized.replace(/tan\(([^)]+)\)/g, (_, p1) => `Math.tan(${p1} ${angleMultiplier})`);
-      sanitized = sanitized.replace(/log\(([^)]+)\)/g, 'Math.log10(\$1)');
-      sanitized = sanitized.replace(/ln\(([^)]+)\)/g, 'Math.log(\$1)');
-      sanitized = sanitized.replace(/sqrt\(([^)]+)\)/g, 'Math.sqrt(\$1)');
-      
-      while (sanitized.includes('^')) {
-        sanitized = sanitized.replace(/([0-9.]+|Math\.[A-Z]+)\^([0-9.]+|Math\.[A-Z]+|\([^)]+\))/g, 'Math.pow(\$1, \$2)');
-      }
-
-      const compute = new Function(`return ${sanitized}`);
-      const evalResult = compute();
-
-      if (isNaN(evalResult) || !isFinite(evalResult)) return 'Error';
-      return Number(evalResult.toFixed(8)).toString();
-    } catch (err) {
-      return 'Error';
-    }
-  };
+  const [history, setHistory] = useState([]);
 
   const handleKeyPress = (value) => {
     if (value === 'AC') {
@@ -45,7 +16,11 @@ export default function App() {
     } else if (value === 'DEL') {
       setDisplay((prev) => prev.slice(0, -1));
     } else if (value === '=') {
-      setResult(evaluateExpression(display));
+      const finalRes = evaluateExpression(display, isDegree);
+      setResult(finalRes);
+      if (finalRes !== 'Error' && finalRes !== '') {
+        setHistory((prev) => [{ expression: display, result: finalRes }, ...prev]);
+      }
     } else if (['sin', 'cos', 'tan', 'log', 'ln', 'sqrt'].includes(value)) {
       setDisplay((prev) => prev + value + '(');
     } else {
@@ -53,94 +28,69 @@ export default function App() {
     }
   };
 
-  // Kusikiliza matukio ya Physical Keyboard
   useEffect(() => {
     const handlePhysicalKeyDown = (event) => {
       const { key } = event;
-
-      // Namba na Alama za kawaida
       if (/[0-9.\+\-\(\)\^%]/.test(key)) {
         event.preventDefault();
         handleKeyPress(key);
-      } 
-      // Alama ya kuzidisha
-      else if (key === '*') {
+      } else if (key === '*') {
         event.preventDefault();
         handleKeyPress('×');
-      } 
-      // Alama ya kugawanya
-      else if (key === '/') {
+      } else if (key === '/') {
         event.preventDefault();
         handleKeyPress('÷');
-      } 
-      // Kupata majibu (Enter au Equal sign)
-      else if (key === 'Enter' || key === '=') {
+      } else if (key === 'Enter' || key === '=') {
         event.preventDefault();
         handleKeyPress('=');
-      } 
-      // Kufuta herufi moja nyuma (Backspace)
-      else if (key === 'Backspace') {
+      } else if (key === 'Backspace') {
         event.preventDefault();
         handleKeyPress('DEL');
-      } 
-      // Kufuta kila kitu (Escape key kwa ajili ya AC)
-      else if (key === 'Escape') {
+      } else if (key === 'Escape') {
         event.preventDefault();
         handleKeyPress('AC');
       }
     };
-
     window.addEventListener('keydown', handlePhysicalKeyDown);
-    
-    // Kusafisha listener wakati component inafungwa au kubadilika
-    return () => {
-      window.removeEventListener('keydown', handlePhysicalKeyDown);
-    };
-  }, [display, isDegree]); // Inategemea state hizi ili kupata data mpya wakati wa evaluate
+    return () => window.removeEventListener('keydown', handlePhysicalKeyDown);
+  }, [display, isDegree]);
 
   const buttons = [
     { label: isDegree ? 'DEG' : 'RAD', action: () => setIsDegree(!isDegree), style: 'bg-[var(--accent)] text-white font-bold' },
-    { label: 'sin', action: () => handleKeyPress('sin'), style: 'bg-[var(--code-bg)] text-[var(--text-h)]' },
-    { label: 'cos', action: () => handleKeyPress('cos'), style: 'bg-[var(--code-bg)] text-[var(--text-h)]' },
-    { label: 'tan', action: () => handleKeyPress('tan'), style: 'bg-[var(--code-bg)] text-[var(--text-h)]' },
-
-    { label: 'π', action: () => handleKeyPress('π'), style: 'bg-[var(--code-bg)] text-[var(--text-h)] font-serif' },
-    { label: 'log', action: () => handleKeyPress('log'), style: 'bg-[var(--code-bg)] text-[var(--text-h)]' },
-    { label: 'ln', action: () => handleKeyPress('ln'), style: 'bg-[var(--code-bg)] text-[var(--text-h)]' },
-    { label: '^', action: () => handleKeyPress('^'), style: 'bg-[var(--code-bg)] text-[var(--text-h)]' },
-
-    { label: 'e', action: () => handleKeyPress('e'), style: 'bg-[var(--code-bg)] text-[var(--text-h)] font-serif' },
-    { label: 'sqrt', action: () => handleKeyPress('sqrt'), style: 'bg-[var(--code-bg)] text-[var(--text-h)]' },
-    { label: '(', action: () => handleKeyPress('('), style: 'bg-[var(--code-bg)] text-[var(--text-h)]' },
-    { label: ')', action: () => handleKeyPress(')'), style: 'bg-[var(--code-bg)] text-[var(--text-h)]' },
-
+    { label: 'sin', action: () => handleKeyPress('sin'), style: 'bg-[var(--code-bg)] text-[var(--text-h)] font-semibold' },
+    { label: 'cos', action: () => handleKeyPress('cos'), style: 'bg-[var(--code-bg)] text-[var(--text-h)] font-semibold' },
+    { label: 'tan', action: () => handleKeyPress('tan'), style: 'bg-[var(--code-bg)] text-[var(--text-h)] font-semibold' },
+    { label: 'π', action: () => handleKeyPress('π'), style: 'bg-[var(--code-bg)] text-[var(--text-h)] font-serif font-bold' },
+    { label: 'log', action: () => handleKeyPress('log'), style: 'bg-[var(--code-bg)] text-[var(--text-h)] font-semibold' },
+    { label: 'ln', action: () => handleKeyPress('ln'), style: 'bg-[var(--code-bg)] text-[var(--text-h)] font-semibold' },
+    { label: '^', action: () => handleKeyPress('^'), style: 'bg-[var(--code-bg)] text-[var(--text-h)] font-bold' },
+    { label: 'e', action: () => handleKeyPress('e'), style: 'bg-[var(--code-bg)] text-[var(--text-h)] font-serif font-bold' },
+    { label: 'sqrt', action: () => handleKeyPress('sqrt'), style: 'bg-[var(--code-bg)] text-[var(--text-h)] font-semibold' },
+    { label: '(', action: () => handleKeyPress('('), style: 'bg-[var(--code-bg)] text-[var(--text-h)] font-bold' },
+    { label: ')', action: () => handleKeyPress(')'), style: 'bg-[var(--code-bg)] text-[var(--text-h)] font-bold' },
     { label: 'AC', action: () => handleKeyPress('AC'), style: 'bg-rose-500 text-white font-bold' },
     { label: <Delete className="w-5 h-5 mx-auto" />, action: () => handleKeyPress('DEL'), style: 'bg-amber-500 text-white' },
-    { label: <Percent className="w-4 h-4 mx-auto" />, action: () => handleKeyPress('%'), style: 'bg-[var(--code-bg)] text-[var(--text-h)]' },
-    { label: '÷', action: () => handleKeyPress('÷'), style: 'bg-[var(--accent-bg)] text-[var(--accent)] border border-[var(--accent-border)] font-bold text-lg' },
-
+    { label: <Percent className="w-4 h-4 mx-auto" />, action: () => handleKeyPress('%'), style: 'bg-[var(--code-bg)] text-[var(--text-h)] font-bold' },
+    { label: '÷', action: () => handleKeyPress('÷'), style: 'bg-[var(--accent-bg)] text-[var(--accent)] border border-[var(--accent-border)] font-bold text-xl' },
     { label: '7', action: () => handleKeyPress('7'), style: 'bg-[var(--bg)] text-[var(--text-h)] border border-[var(--border)]' },
     { label: '8', action: () => handleKeyPress('8'), style: 'bg-[var(--bg)] text-[var(--text-h)] border border-[var(--border)]' },
     { label: '9', action: () => handleKeyPress('9'), style: 'bg-[var(--bg)] text-[var(--text-h)] border border-[var(--border)]' },
-    { label: '×', action: () => handleKeyPress('×'), style: 'bg-[var(--accent-bg)] text-[var(--accent)] border border-[var(--accent-border)] font-bold text-lg' },
-
+    { label: '×', action: () => handleKeyPress('×'), style: 'bg-[var(--accent-bg)] text-[var(--accent)] border border-[var(--accent-border)] font-bold text-xl' },
     { label: '4', action: () => handleKeyPress('4'), style: 'bg-[var(--bg)] text-[var(--text-h)] border border-[var(--border)]' },
     { label: '5', action: () => handleKeyPress('5'), style: 'bg-[var(--bg)] text-[var(--text-h)] border border-[var(--border)]' },
     { label: '6', action: () => handleKeyPress('6'), style: 'bg-[var(--bg)] text-[var(--text-h)] border border-[var(--border)]' },
-    { label: '-', action: () => handleKeyPress('-'), style: 'bg-[var(--accent-bg)] text-[var(--accent)] border border-[var(--accent-border)] font-bold text-lg' },
-
+    { label: '-', action: () => handleKeyPress('-'), style: 'bg-[var(--accent-bg)] text-[var(--accent)] border border-[var(--accent-border)] font-bold text-xl' },
     { label: '1', action: () => handleKeyPress('1'), style: 'bg-[var(--bg)] text-[var(--text-h)] border border-[var(--border)]' },
     { label: '2', action: () => handleKeyPress('2'), style: 'bg-[var(--bg)] text-[var(--text-h)] border border-[var(--border)]' },
     { label: '3', action: () => handleKeyPress('3'), style: 'bg-[var(--bg)] text-[var(--text-h)] border border-[var(--border)]' },
-    { label: '+', action: () => handleKeyPress('+'), style: 'bg-[var(--accent-bg)] text-[var(--accent)] border border-[var(--accent-border)] font-bold text-lg' },
-
+    { label: '+', action: () => handleKeyPress('+'), style: 'bg-[var(--accent-bg)] text-[var(--accent)] border border-[var(--accent-border)] font-bold text-xl' },
     { label: '0', action: () => handleKeyPress('0'), style: 'col-span-2 bg-[var(--bg)] text-[var(--text-h)] border border-[var(--border)]' },
     { label: '.', action: () => handleKeyPress('.'), style: 'bg-[var(--bg)] text-[var(--text-h)] border border-[var(--border)] font-bold' },
-    { label: '=', action: () => handleKeyPress('='), style: 'bg-[var(--accent)] text-white font-bold text-lg' },
+    { label: '=', action: () => handleKeyPress('='), style: 'bg-[var(--accent)] text-white font-bold text-xl' },
   ];
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center p-6 w-full mx-auto max-w-xl">
+    <div className="flex-1 flex flex-col items-center justify-center p-6 w-full mx-auto max-w-xl gap-6">
       <h1>Scientific Calculator</h1>
       
       <div 
@@ -173,6 +123,46 @@ export default function App() {
               {btn.label}
             </button>
           ))}
+        </div>
+      </div>
+
+      <div 
+        className="w-full p-5 rounded-2xl border border-[var(--border)] text-left"
+        style={{ boxShadow: 'var(--shadow)', backgroundColor: 'var(--bg)' }}
+      >
+        <div className="flex justify-between items-center mb-3 border-b border-[var(--border)] pb-2">
+          <div className="flex items-center gap-2 text-[var(--text-h)] font-medium">
+            <History className="w-4 h-4 text-[var(--accent)]" />
+            <h2>Calculation History</h2>
+          </div>
+          {history.length > 0 && (
+            <button 
+              onClick={() => setHistory([])}
+              className="text-xs text-rose-500 flex items-center gap-1 hover:underline cursor-pointer select-none"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Clear
+            </button>
+          )}
+        </div>
+
+        <div className="max-h-48 overflow-y-auto font-mono text-sm space-y-2.5 pr-1">
+          {history.length === 0 ? (
+            <p className="text-[var(--text)] text-xs italic py-2 text-center">No recent calculations yet.</p>
+          ) : (
+            history.map((item, index) => (
+              <div 
+                key={index} 
+                onClick={() => {
+                  setDisplay(item.expression);
+                  setResult(item.result);
+                }}
+                className="p-2 rounded-lg bg-[var(--code-bg)] hover:border-[var(--accent-border)] border border-transparent cursor-pointer transition-all flex flex-col items-end gap-0.5 group"
+              >
+                <span className="text-[var(--text)] text-xs group-hover:text-[var(--accent)] transition-colors">{item.expression}</span>
+                <span className="text-[var(--text-h)] font-semibold text-base">= {item.result}</span>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
