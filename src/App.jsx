@@ -146,45 +146,6 @@ export default function App() {
         </div>
       </div>
 
-      <div 
-        className="w-full p-5 rounded-2xl border border-[var(--border)] text-left"
-        style={{ boxShadow: 'var(--shadow)', backgroundColor: 'var(--bg)' }}
-      >
-        <div className="flex justify-between items-center mb-3 border-b border-[var(--border)] pb-2">
-          <div className="flex items-center gap-2 text-[var(--text-h)] font-medium">
-            <History className="w-4 h-4 text-[var(--accent)]" />
-            <h2>Calculation History</h2>
-          </div>
-          {history.length > 0 && (
-            <button 
-              onClick={() => setHistory([])}
-              className="text-xs text-rose-500 flex items-center gap-1 hover:underline cursor-pointer select-none"
-            >
-              <Trash2 className="w-3.5 h-3.5" /> Clear
-            </button>
-          )}
-        </div>
-
-        <div className="max-h-48 overflow-y-auto font-mono text-sm space-y-2.5 pr-1">
-          {history.length === 0 ? (
-            <p className="text-[var(--text)] text-xs italic py-2 text-center">No recent calculations yet.</p>
-          ) : (
-            history.map((item, index) => (
-              <div 
-                key={index} 
-                onClick={() => {
-                  setDisplay(item.expression);
-                  setResult(item.result);
-                }}
-                className="p-2 rounded-lg bg-[var(--code-bg)] hover:border-[var(--accent-border)] border border-transparent cursor-pointer transition-all flex flex-col items-end gap-0.5 group"
-              >
-                <span className="text-[var(--text)] text-xs group-hover:text-[var(--accent)] transition-colors">{item.expression}</span>
-                <span className="text-[var(--text-h)] font-semibold text-base">= {item.result}</span>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
     </div>
   );
 }
